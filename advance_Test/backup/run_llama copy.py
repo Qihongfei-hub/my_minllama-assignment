@@ -130,7 +130,6 @@ def save_model(model, optimizer, args, config, filepath):
 	torch.save(save_info, filepath)
 	print(f"save the model to {filepath}")
 
-#qhf
 def train(args):
 	device = torch.device('cuda') if args.use_gpu and torch.cuda.is_available() else torch.device('cpu')
 	#### Load data
@@ -141,13 +140,9 @@ def train(args):
 
 	train_dataset = LlamaDataset(train_data, args)
 	dev_dataset = LlamaDataset(dev_data, args)
-    
-	##qhf
-	#train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size,
-	#							  collate_fn=train_dataset.collate_fn)
-	train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size,
-								  collate_fn=train_dataset.collate_fn)  
 
+	train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size,
+								  collate_fn=train_dataset.collate_fn)
 	dev_dataloader = DataLoader(dev_dataset, shuffle=False, batch_size=args.batch_size,
 								collate_fn=dev_dataset.collate_fn)
 
@@ -163,8 +158,7 @@ def train(args):
 	# initialize the Senetence Classification Model
 	model = LlamaEmbeddingClassifier(config)
 	model = model.to(device)
-    
-	#qhf
+
 	lr = args.lr
 	## specify the optimizer
 	optimizer = AdamW(model.parameters(), lr=lr)
@@ -197,8 +191,7 @@ def train(args):
 
 		train_acc, train_f1, *_ = model_eval(train_dataloader, model, device)
 		dev_acc, dev_f1, *_ = model_eval(dev_dataloader, model, device)
-        
-		#qhf
+
 		if dev_acc > best_dev_acc:
 			best_dev_acc = dev_acc
 			save_model(model, optimizer, args, config, args.filepath)

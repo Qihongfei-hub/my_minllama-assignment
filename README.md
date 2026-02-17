@@ -79,7 +79,7 @@ Zero-Shot Prompting for SST:
 
 `python run_llama.py --option prompt --batch_size 10  --train data/sst-train.txt --dev data/sst-dev.txt --test data/sst-test.txt --label-names data/sst-label-mapping.json --dev_out sst-dev-prompting-output.txt --test_out sst-test-prompting-output.txt [--use_gpu]`
 or 
-`python run_llama.py --option prompt --batch_size 64  --train data/sst-train.txt --dev data/sst-dev.txt --test data/sst-test.txt --label-names data/sst-label-mapping.json --dev_out sst-dev-prompting-output.txt --test_out sst-test-prompting-output.txt --use_gpu` 
+`python run_llama.py --option prompt --batch_size 80 --train data/sst-train.txt --dev data/sst-dev.txt --test data/sst-test.txt --label-names data/sst-label-mapping.json --dev_out sst-dev-prompting-output.txt --test_out sst-test-prompting-output.txt --use_gpu` 
 
 Prompting for SST:
 Dev Accuracy: 0.213 (0.000)
@@ -101,6 +101,10 @@ Test Accuracy: -
 *Classification Finetuning*
 
 `python run_llama.py --option finetune --epochs 5 --lr 2e-5 --batch_size 80  --train data/sst-train.txt --dev data/sst-dev.txt --test data/sst-test.txt --label-names data/sst-label-mapping.json --dev_out sst-dev-finetuning-output.txt --test_out sst-test-finetuning-output.txt [--use_gpu]`
+
+
+python run_llama.py --option finetune --epochs 5 --lr 1e-6 --batch_size 80  --train data/sst-train.txt --dev data/sst-dev.txt --test data/sst-test.txt --label-names data/sst-label-mapping.json --dev_out sst-dev-finetuning-output.txt --test_out sst-test-finetuning-output.txt --use_gpu
+
 
 Finetuning for SST:
 Dev Accuracy: 0.414 (0.014)
