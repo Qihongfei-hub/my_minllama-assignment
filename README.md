@@ -105,6 +105,7 @@ Test Accuracy: -
 
 python run_llama.py --option finetune --epochs 5 --lr 1e-6 --batch_size 80  --train data/sst-train.txt --dev data/sst-dev.txt --test data/sst-test.txt --label-names data/sst-label-mapping.json --dev_out sst-dev-finetuning-output.txt --test_out sst-test-finetuning-output.txt --use_gpu
 
+python run_llama.py --option finetune --epochs 50 --lr 1e-5 --batch_size 80  --train data/sst-train.txt --dev data/sst-dev.txt --test data/sst-test.txt --label-names data/sst-label-mapping.json --dev_out sst-dev-finetuning-output.txt --test_out sst-test-finetuning-output.txt --use_gpu
 
 Finetuning for SST:
 Dev Accuracy: 0.414 (0.014)

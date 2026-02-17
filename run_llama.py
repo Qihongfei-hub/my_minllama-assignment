@@ -1,3 +1,4 @@
+from torch.optim.lr_scheduler import CosineAnnealingLR  #qhf enhancement 
 from contextlib import nullcontext
 import json
 import time, random, numpy as np, argparse, sys, re, os
@@ -148,8 +149,10 @@ def train(args):
 	train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=args.batch_size,
 								  collate_fn=train_dataset.collate_fn)  
 
-	dev_dataloader = DataLoader(dev_dataset, shuffle=False, batch_size=args.batch_size,
+	dev_dataloader = DataLoader(dev_dataset, shuffle=True, batch_size=args.batch_size,
 								collate_fn=dev_dataset.collate_fn)
+    #qhf false -> true
+
 
 	#### Init model
 	config = {'hidden_dropout_prob': args.hidden_dropout_prob,
@@ -167,7 +170,13 @@ def train(args):
 	#qhf
 	lr = args.lr
 	## specify the optimizer
-	optimizer = AdamW(model.parameters(), lr=lr)
+	#optimizer = AdamW(model.parameters(), lr=lr)
+	#qhf enhancement
+	optimizer = AdamW(model.parameters(), lr=lr, weight_decay=0.0005)  # 0.01->0.001
+
+    #qhf enhancement
+	scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=lr * 1e-3)
+
 	best_dev_acc = 0
 
 	## run for the specified number of epochs
@@ -192,6 +201,9 @@ def train(args):
 
 			train_loss += loss.item()
 			num_batches += 1
+
+            #qhf enhancement
+			scheduler.step()
 
 		train_loss = train_loss / (num_batches)
 
@@ -269,11 +281,13 @@ def test_with_prompting(args):
 
 		dev_data = create_data(args.dev, tokenizer, 'valid', eos=False, prompt_suffix=prompt_suffix)
 		dev_dataset = LlamaDataset(dev_data, args, eos=False)
-		dev_dataloader = DataLoader(dev_dataset, shuffle=False, batch_size=args.batch_size, collate_fn=dev_dataset.collate_fn)
+		dev_dataloader = DataLoader(dev_dataset, shuffle=True, batch_size=args.batch_size, collate_fn=dev_dataset.collate_fn)
+		#qhf false ->true
 
 		test_data = create_data(args.test, tokenizer, 'test', eos=False, prompt_suffix=prompt_suffix)
 		test_dataset = LlamaDataset(test_data, args, eos=False)
-		test_dataloader = DataLoader(test_dataset, shuffle=False, batch_size=args.batch_size, collate_fn=test_dataset.collate_fn)
+		test_dataloader = DataLoader(test_dataset, shuffle=True, batch_size=args.batch_size, collate_fn=test_dataset.collate_fn)
+		#qhf false ->true
 
 		dev_acc, dev_f1, dev_pred, dev_true, dev_sents = model_eval(dev_dataloader, model, device)
 		test_acc, test_f1, test_pred, test_true, test_sents = model_eval(test_dataloader, model, device)
@@ -295,11 +309,16 @@ def test(args):
 		tokenizer = Tokenizer(args.max_sentence_len)
 		dev_data = create_data(args.dev, tokenizer, 'valid')
 		dev_dataset = LlamaDataset(dev_data, args)
-		dev_dataloader = DataLoader(dev_dataset, shuffle=False, batch_size=args.batch_size, collate_fn=dev_dataset.collate_fn)
+		dev_dataloader = DataLoader(dev_dataset, shuffle=True, batch_size=args.batch_size, collate_fn=dev_dataset.collate_fn)
+        #qhf false ->true
+
+
+
 
 		test_data = create_data(args.test, tokenizer, 'test')
 		test_dataset = LlamaDataset(test_data, args)
-		test_dataloader = DataLoader(test_dataset, shuffle=False, batch_size=args.batch_size, collate_fn=test_dataset.collate_fn)
+		test_dataloader = DataLoader(test_dataset, shuffle=True, batch_size=args.batch_size, collate_fn=test_dataset.collate_fn)
+        #qhf false ->true
 
 		dev_acc, dev_f1, dev_pred, dev_true, dev_sents = model_eval(dev_dataloader, model, device)
 		test_acc, test_f1, test_pred, test_true, test_sents = model_eval(test_dataloader, model, device)
@@ -328,7 +347,7 @@ def get_args():
 
 	# hyper parameters
 	parser.add_argument("--batch_size", help='sst: 64, cfimdb: 8 can fit a 12GB GPU', type=int, default=8)
-	parser.add_argument("--hidden_dropout_prob", type=float, default=0.3)
+	parser.add_argument("--hidden_dropout_prob", type=float, default=0.3)  # qhf 0.3->-0.8
 	parser.add_argument("--lr", type=float, help="learning rate, default lr for 'pretrain': 1e-3, 'finetune': 1e-5",
 						default=2e-5)
 
