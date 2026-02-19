@@ -1,6 +1,9 @@
 # Min-Llama Assignment
 by Vijay Viswanathan (based on the previous [minbert-assignment](https://github.com/neubig/minbert-assignment))
 
+## Meta-lama Llama
+https://github.com/meta-llama/llama
+
 # 中文注释：项目标题和作者信息
 # 这是Min-Llama任务的标题，作者是Vijay Viswanathan，基于之前的minbert-assignment项目
 

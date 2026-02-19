@@ -11,6 +11,14 @@ The multi-head attention layer of the transformer. This layer maps a query and a
 4. concatenate multi-head attention outputs to recover the original shape
 
 $$Attention(Q,K,V)=softmax(\frac{QK^T}{\sqrt{d_k}})V$$
+# - 核心原理 ：注意力层将查询（Query）与一组键值对（Key-Value）映射到输出
+- 计算方式 ：输出是值（Value）的加权和，每个值的权重由查询和对应键的函数计算得出
+- 步骤1 ：通过线性层对查询,键,值进行线性投影
+- 步骤2 ：将向量分割为多个"头"（head）以实现多头注意力
+- 步骤3 ：根据公式计算每个头的注意力输出
+- 步骤4 ：将多个头的输出拼接，恢复原始形状
+
+
 
 Llama2 uses a modified version of this procedure called [Grouped-Query Attention](https://arxiv.org/abs/2305.13245) where, instead of each attention head having its own "query", "key", and "vector" head, some groups of "query" heads share the same "key" and "vector" heads. To simplify your implementation, we've taken care of steps #1, 2, and 4 here; you only need to follow the equation to compute the attended output of each head.
 
@@ -37,13 +45,13 @@ The desired outputs are
 
 ### To be implemented
 Components that require your implementations are comment with ```#todo```. The detailed instructions can be found in their corresponding code blocks
-* ```llama.Attention.forward```
-* ```llama.RMSNorm.norm```
-* ```llama.Llama.forward```
-* ```llama.Llama.generate```
+* ```llama.Attention.forward```      ## 多头注意力机制
+* ```llama.RMSNorm.norm```           ##均方根层归一化
+* ```llama.Llama.forward```          ##Llama模型前向传播
+* ```llama.Llama.generate```         ##Llama模型生成文本
 * ```rope.apply_rotary_emb``` (this one may be tricky! you can use `rope_test.py` to test your implementation)
-* ```optimizer.AdamW.step```
-* ```classifier.LlamaEmbeddingClassifier.forward```
+* ```optimizer.AdamW.step``` Llama模型前向传播
+* ```classifier.LlamaEmbeddingClassifier.forward```- 分类器前向传播 
 
 *ATTENTION:* you are free to re-organize the functions inside each class, but please don't change the variable names that correspond to Llama2 parameters. The change to these variable names will fail to load the pre-trained weights.
 

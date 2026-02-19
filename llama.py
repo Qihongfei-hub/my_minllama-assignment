@@ -45,6 +45,8 @@ class RMSNorm(torch.nn.Module):
         """
         # Calculate root mean square normalization
         norm = torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps)
+        #平方 → (求和 /dim) 均值 → 开方 
+        # → 归一化
         return x / norm
 
     def forward(self, x):
@@ -67,15 +69,22 @@ class Attention(nn.Module):
         self.n_kv_heads = config.n_heads if config.n_kv_heads is None else config.n_kv_heads
         assert config.n_heads % self.n_kv_heads == 0
         model_parallel_size = 1
+        #不使用模型并行 ：所有模型参数和计算都在单个设备上执行
+        #model_parallel_size=1 ，因此 n_local_heads = config.n_heads （所有注意力头都在本地设备）
         self.n_local_heads = config.n_heads // model_parallel_size
         self.n_local_kv_heads = self.n_kv_heads // model_parallel_size
         self.n_rep = self.n_local_heads // self.n_local_kv_heads
-        self.head_dim = config.dim // config.n_heads
+
+        self.head_dim = config.dim 
         self.max_seq_len = config.max_seq_len
         self.compute_query = nn.Linear(config.dim, config.n_heads * self.head_dim, bias=False)
         self.compute_key = nn.Linear(config.dim, self.n_kv_heads * self.head_dim, bias=False)
         self.compute_value = nn.Linear(config.dim, self.n_kv_heads * self.head_dim, bias=False)
         self.compute_output = nn.Linear(config.n_heads * self.head_dim, config.dim, bias=False)
+        #self.n_kv_heads =8
+        #self.n_local_kv_heads =8
+        # self.head_dim =512
+
         self.attn_dropout = nn.Dropout(config.dropout)
         self.resid_dropout = nn.Dropout(config.dropout)
         self.dropout = config.dropout
@@ -96,16 +105,40 @@ class Attention(nn.Module):
         attention matrix before applying it to the value tensor.
         '''
         # Calculate scaled dot product attention
-        # Compute attention scores
+        '''
+        缩放点积注意力机制 Scaled Dot Product Attention 
+        '''
+
+        # Compute attention scores QK
         attn_scores = torch.matmul(query, key.transpose(-2, -1))
+        # 计算查询（query）与键（key）之间的点积，得到原始注意力分数。
+        '''
+        1. 负索引的基本含义
+        在 PyTorch（以及 Python 中）， 负索引 表示从张量的末尾开始计数：
+        - -1 ：表示 最后一个维度
+        - -2 ：表示 倒数第二个维度 2. 具体张量形状分析
+        在注意力机制中， key 张量的形状通常为：
+        (batch_size, num_heads, seq_len, head_dim)
+        其中：
+        - batch_size ：批量大小
+        - num_heads ：注意力头数
+        - seq_len ：序列长度（倒数第二个维度，即 -2 ）
+        - head_dim ：每个注意力头的维度（最后一个维度，即 -1 ）
+     '''
+
         # Scale by square root of head dimension
         attn_scores = attn_scores / math.sqrt(self.head_dim)
+        #默认值计算： head_dim = 512 // 8 = 64
         # Apply softmax to get attention weights
         attn_weights = F.softmax(attn_scores, dim=-1)
         # Apply attention dropout
         attn_weights = self.attn_dropout(attn_weights)
+        #Dropout
+
         # Compute weighted sum of values
         output = torch.matmul(attn_weights, value)
+        #使用注意力权重对值（value）进行加权求和，得到最终的注意力输出。
+        # 数学原理 ：计算 Attention(Q, K, V) = softmax(Q·K^T/√d_k) · V ，其中 V 是值矩阵    
         return output
 
     def forward(
@@ -131,16 +164,22 @@ class Attention(nn.Module):
         value = value.view(batch_size, seqlen, self.n_local_kv_heads, self.head_dim)
 
         # RoPE relative positional embeddings
+        # apply RoPE, 应用旋转位置编码 （RoPE, Rotary Position Embeddings
         query, key = apply_rotary_emb(query, key, self.head_dim, self.max_seq_len)
 
         # Grouped multiquery attention: expand out keys and values.
         # Convert both to:
         # (bs, seqlen, n_local_heads, head_dim)
+        #分组多查询注意力 （Grouped Multi-Query Attention, GQA）：通过重复扩展键（key）和值（value）
         key = torch.repeat_interleave(key, dim=2, repeats=self.n_rep)
         value = torch.repeat_interleave(value, dim=2, repeats=self.n_rep)
 
         # make heads into a batch dimension
         query = query.transpose(1, 2)  # (bs, n_local_heads, seqlen, head_dim)
+        #变换前形状 ： (batch_size, seqlen, n_local_heads, head_dim)
+        #执行 transpose(1, 2)
+        #变换后形状 ： (batch_size, n_local_heads, seqlen, head_dim)
+        #why:  注意力计算的标准实现通常期望输入形状为 (batch_size, n_heads, seqlen, head_dim)
         key = key.transpose(1, 2)
         value = value.transpose(1, 2)
         output = self.compute_query_key_value_scores(query, key, value)
@@ -158,13 +197,16 @@ class FeedForward(nn.Module):
         super().__init__()
         if hidden_dim is None:
             hidden_dim = 4 * dim
+            #在原始 Transformer 模型（《Attention Is All You Need》）中，前馈网络（Feed-Forward Network, FFN）的隐藏维度被设计为输入维度的 4 倍
+            #传统 Transformer 中 4 倍隐藏维度的设置是 理论分析、实验验证和工程实践 共同作用的结果，
+            #它确保了前馈网络能有效增强模型的非线性表达能力，同时兼顾计算效率和训练稳定性，成为后续众多模型的标准配置
             hidden_dim = int(2 * hidden_dim / 3)
             hidden_dim = multiple_of * ((hidden_dim + multiple_of - 1) // multiple_of)
         self.w1 = nn.Linear(dim, hidden_dim, bias=False)
         self.w2 = nn.Linear(hidden_dim, dim, bias=False)
         self.w3 = nn.Linear(dim, hidden_dim, bias=False)
         self.dropout = nn.Dropout(dropout)
-
+   
     def SwiGLU(self, x: torch.Tensor) -> torch.Tensor:
         '''
         Compute the SwiGLU activation function (see Section 2 in
@@ -174,6 +216,9 @@ class FeedForward(nn.Module):
 
     def forward(self, x):
         return self.dropout(self.w2(self.SwiGLU(x)))
+    #- 两个并行线性变换 ： W1 和 W3 分别处理输入 x ，生成相同维度的中间结果
+    #- 门控机制 ： SiLU(W1(x)) 作为门控信号，控制 W3(x) 的信息通过率
+    #- 逐元素相乘 ：门控信号与内容信号相乘，实现自适应信息过滤
 
 
 class LlamaLayer(nn.Module):
@@ -181,7 +226,7 @@ class LlamaLayer(nn.Module):
         super().__init__()
         self.n_heads = config.n_heads
         self.dim = config.dim
-        self.head_dim = config.dim // config.n_heads
+        self.head_dim = config.dim
         self.attention = Attention(config)
         self.feed_forward = FeedForward(
             dim=config.dim,
@@ -209,9 +254,16 @@ class LlamaLayer(nn.Module):
            output of the feed-forward network
         '''
         # Layer normalization of the input
+        '''
+        ## 输入 Normalization
+        '''
         norm_x = self.attention_norm(x)
         # Self-attention on the layer-normalized input
         attn_output = self.attention(norm_x)
+
+        '''
+        ## Residual connection 
+        '''
         # Residual connection (add input to self-attention output)
         x = x + attn_output
         # Layer normalization on the output of the self-attention
@@ -237,7 +289,7 @@ class Llama(LlamaPreTrainedModel):
         self.dropout = nn.Dropout(config.dropout)
         self.layers = torch.nn.ModuleList()
         for layer_id in range(config.n_layers):
-            self.layers.append(LlamaLayer(layer_id, config))
+            self.layers.append(LlamaLayer(layer_id, config))  #LlamaLayer
         self.norm = RMSNorm(config.dim, eps=config.layer_norm_eps)
         self.output = nn.Linear(config.dim, config.vocab_size, bias=False)
 
