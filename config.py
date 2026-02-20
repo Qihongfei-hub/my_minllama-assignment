@@ -268,7 +268,7 @@ class LlamaConfig(PretrainedConfig):
     vocab_size: int = 32000,
     dim: int = 512,
     dropout: int = 0.0,
-    n_layers: int = 8,
+    n_layers: int = 8,    # qhf
     n_heads: int = 8,
     n_kv_heads: Optional[int] = 8,
     max_seq_len: int = 1024,

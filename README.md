@@ -16,7 +16,7 @@ In this assignment, you will implement some important components of the Llama2 m
 You will then perform sentence classification on ``sst`` dataset and ``cfimdb`` dataset with this model.
 
 # 中文注释：任务目标
-# 在这个作业中，你将实现Llama2模型的一些重要组件，以更好地理解其架构。
+# 在这个作业中，你将实现Llama2模型的一些重要组件，以更好地理解其架构.
 # 然后，你将使用这个模型在sst数据集和cfimdb数据集上执行句子分类任务.
 
 ## Assignment Details
@@ -31,7 +31,7 @@ The code to implement can be found in `llama.py`, `classifier.py` and `optimizer
 
 # 中文注释：实现代码位置和模型信息
 # 你需要在llama.py、classifier.py和optimizer.py文件中实现代码。你负责编写Llama2（领先的开源语言模型之一）的核心组件。
-# 通过这样做，你将获得对神经语言建模的深入理解。我们将从stories42M.pt加载预训练权重，这是一个8层、42M参数的语言模型，在TinyStories数据集（机器生成的儿童故事数据集）上预训练。
+# 通过这样做，你将获得对神经语言建模的深入理解.我们将从stories42M.pt加载预训练权重，这是一个8层,42M参数的语言模型，在TinyStories数据集（机器生成的儿童故事数据集）上预训练.
 # 这个模型足够小，可以在没有GPU的情况下训练（速度较慢）。建议你使用Colab或个人GPU机器（如Macbook）来更快地迭代。
 
 Once you have implemented these components, you will test our your model in 3 settings:
