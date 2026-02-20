@@ -203,7 +203,7 @@ def train(args):
 			num_batches += 1
 
             #qhf enhancement
-			scheduler.step()
+			scheduler.step()   # 每个batch更新一次学习率
 
 		train_loss = train_loss / (num_batches)
 

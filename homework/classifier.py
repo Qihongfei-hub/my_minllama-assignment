@@ -56,3 +56,17 @@ class LlamaEmbeddingClassifier(torch.nn.Module):
 		'''
 		# todo
 		raise NotImplementedError
+		
+		""" answer
+		# 前向传播 Llama 模型
+		hidden_states, _ = self.llama(input_ids)
+		# 取最后一个 token 的隐藏状态
+		last_token_hidden_states = hidden_states[:, -1, :]
+		# 应用 dropout
+		last_token_hidden_states = self.dropout(last_token_hidden_states)
+		# 传递到分类头
+		logits = self.classifier_head(last_token_hidden_states)
+		# 计算 log-softmax
+		log_probabilities = F.log_softmax(logits, dim=-1)
+		return log_probabilities
+		"""

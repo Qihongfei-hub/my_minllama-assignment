@@ -46,6 +46,18 @@ class RMSNorm(torch.nn.Module):
         # todo
         raise NotImplementedError
 
+        """ answer 
+        # Calculate root mean square normalization
+        norm = torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps)
+        #平方** 2, → (求和 /dim) 均值 mean → 开方 sqrt
+
+        # 归一化
+        return x / norm
+        """
+
+
+
+
     def forward(self, x):
         """
         Apply the root mean square normalizer.
@@ -95,6 +107,18 @@ class Attention(nn.Module):
         '''
         # todo
         raise NotImplementedError
+
+        """ answer
+        # 计算缩放点积注意力分数
+        scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.head_dim)
+        # 应用 dropout
+        scores = self.attn_dropout(scores)
+        # 计算注意力权重
+        attn_weights = F.softmax(scores, dim=-1)
+        # 应用注意力权重到值张量
+        output = torch.matmul(attn_weights, value)
+        return output
+        """
 
     def forward(
         self,
@@ -170,16 +194,16 @@ class LlamaLayer(nn.Module):
         self.n_heads = config.n_heads
         self.dim = config.dim
         self.head_dim = config.dim // config.n_heads
-        self.attention = Attention(config)
-        self.feed_forward = FeedForward(
+        self.attention = Attention(config)    #
+        self.feed_forward = FeedForward(    ##
             dim=config.dim,
             hidden_dim=config.hidden_dim,
             multiple_of=config.multiple_of,
             dropout=config.dropout,
         )
         self.layer_id = layer_id
-        self.attention_norm = RMSNorm(config.dim, eps=config.layer_norm_eps)
-        self.ffn_norm = RMSNorm(config.dim, eps=config.layer_norm_eps)
+        self.attention_norm = RMSNorm(config.dim, eps=config.layer_norm_eps) #
+        self.ffn_norm = RMSNorm(config.dim, eps=config.layer_norm_eps)  ##
 
     def forward(self, x):
         '''
@@ -198,6 +222,23 @@ class LlamaLayer(nn.Module):
         '''
         # todo
         raise NotImplementedError
+        
+        """ answer
+        # 层归一化
+        x = self.attention_norm(x)
+        # 自注意力
+        attn_output = self.attention(x)
+        # 残差连接
+        x = x + attn_output
+        # 层归一化
+        x = self.ffn_norm(x)
+        # 前馈网络
+        ffn_output = self.feed_forward(x)
+        # 残差连接
+        x = x + ffn_output
+        return x
+        """
+
 
 class Llama(LlamaPreTrainedModel):
     def __init__(self, config: LlamaConfig):
