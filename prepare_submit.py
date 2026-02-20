@@ -89,4 +89,9 @@ def main(path: str, aid: str):
     # --
 
 if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print("Usage: python prepare_submit.py <path> <andrew_id>")
+        print("  <path>: either a directory to create a zip from or an existing zip file to check")
+        print("  <andrew_id>: your Andrew ID (for naming the zip file and verifying the directory structure)")
+        sys.exit(1)
     main(*sys.argv[1:])
